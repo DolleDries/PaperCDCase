@@ -1,0 +1,146 @@
+#!/usr/local/bin/python
+#
+# A.G. van der Vlies (andre@vandervlies.xs4all.nl)
+# Sat Jul 10 00:49:26 UTC 2004
+#
+# Made relative coordinates.....
+# Sun Jul 11 15:16:47 UTC 2004
+#
+# Make a paper CD wallet. With an image up front.
+# Obviously one needs 'reportlab' (http://www.reportlab.org/).
+# Folding instructions can be found at 'http://www.papercdcase.com/about.php'
+#
+# TODO:
+# Make more robust...
+#
+# I wish somebody would _explain_ 'platypus' to me...
+#
+
+import getopt, sys
+
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
+
+# Paper sizes
+width=214*mm
+height=297*mm
+
+# Use theze lines to find 'midpaper' by adjusting the above
+# mentioned width and height....
+# paper.line(width/2,0, width/2,height)
+# paper.line(0,height/2, width,height/2)
+
+# Handy other sizes
+spine = 7*mm
+front = 122*mm
+
+# Corners....
+left = width/2 - front/2
+right = width/2 + front/2
+bottom = height/2 - front/2
+top = height/2 + front/2
+
+# Initialize variables
+SpineText = None
+Image = None
+SongList = None
+Text = None
+
+def usage():
+	print "%s [--spine <text>] [--image <filename> | --text <text>] [--content <filename>] [--help]" % sys.argv[1]
+	sys.exit(2)
+
+try:
+	opts, args = getopt.getopt(sys.argv[1:], "i:s:c:t:h",
+						["help", "spine=", "image=",
+						"content=", "text=", "stdout"])
+except getopt.GetoptError:
+	# print help information and exit:
+	usage()
+
+for o, a in opts:
+	if o in ("-h", "--help"):
+		usage()
+	if o in ("-s", "--spine"):
+		SpineText = a
+	if o in ("-i", "--image"):
+		Image = a
+	if o in ("-c", "--content"):
+		SongList = a
+	if o in ("-t", "--text"):
+		Text = a
+	if o in ("--stdout"):
+		filename = sys.stdout
+	else:
+		filename = "CDwallet.pdf"
+
+# Define paper
+paper = canvas.Canvas(filename, pagesize=(width, height))
+
+
+# Set line style
+paper.setLineWidth(0.1*mm)
+paper.setDash([6,3,1,3],0)
+
+#Folding lines
+paper.line(left,0, left,height)
+paper.line(right,0, right,height)
+paper.line(0,bottom, width,bottom)
+paper.line(0,top, width,top)
+paper.line(0,top + spine, width,top + spine)
+
+# Pocket angles
+paper.line(0,bottom + left, left,bottom)
+paper.line(0,bottom - left, left,bottom)
+paper.line(width,bottom + left, right,bottom)
+paper.line(width,bottom - left, right,bottom)
+
+# Slip angles
+paper.line(0,height, left,height-30)
+paper.line(left*2,height, left,height-30)
+paper.line(right,height-30, width,height)
+wedge = width - right
+paper.line(width-2*wedge,height, right,height-30)
+
+try:
+	paper.drawImage("/etc/trademark/MyTradeMark.jpg", right+3*mm, top-15*mm, width=32*mm, height=12*mm)
+except:
+	pass
+
+
+if SpineText:
+	Spine = paper.beginText()
+	Spine.setTextOrigin(left+5*mm, top+2*mm)
+	Spine.setFont("Helvetica-Bold", 12)
+	Spine.textLine(SpineText)
+	paper.drawText(Spine)
+
+# Image or text.... Image has precedence.
+if Image:
+	offset = (front - 120*mm)/2
+	paper.drawImage(Image, left + offset, bottom + offset, width=120*mm, height=120*mm)
+elif Text:
+	FrontText = paper.beginText()
+	FrontText.setTextOrigin(left+5*mm, bottom+100*mm)
+	FrontText.setFont("Helvetica-Bold", 24)
+	FrontText.setFillGray(0.5)
+	FrontText.textLine(Text)
+	paper.drawText(FrontText)
+
+
+if SongList:
+	# Rotate paper to 3rd quadrant
+	paper.rotate(180)
+	File = open(SongList, 'r')
+
+	# You'll have to make the 'songlist' fit yourself
+	Content = paper.beginText()
+	Content.setTextOrigin(-right+5*mm, -10*mm)
+	Content.setFont("Helvetica", 10)
+	for line in File:
+		Content.textLine(line)
+	paper.drawText(Content)
+
+
+paper.showPage()
+paper.save()

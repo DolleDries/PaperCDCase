@@ -1,0 +1,51 @@
+#!/usr/local/bin/python
+#
+
+import sys
+import getopt
+
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
+
+def usage():
+	print """%s [--Xoffset <value>] [--Yoffset <value>]""" % sys.argv[0]
+	sys.exit(2)
+
+try:
+	opts, args = getopt.getopt(sys.argv[1:], "x:y:",
+						[ "Xoffset=", "Yoffset="])
+except getopt.GetoptError:
+	# print help information and exit:
+	usage()
+
+Xoffset = 0
+Yoffset = 0
+
+for option, value in opts:
+    if option in ("-x", "--Xoffset"):
+	    Xoffset = int(value)
+    if option in ("-y", "--Yoffset"):
+	    Yoffset = int(value)
+
+# Paper sizes
+width = 210*mm
+height = 297*mm
+
+equator = (height/2.0) + Yoffset*mm
+meridian = (width/2.0) + Xoffset*mm
+
+
+# Define paper
+paper = canvas.Canvas("midpaper.pdf", pagesize=(width, height))
+
+Orientation = paper.beginText()
+Orientation.setTextOrigin(25*mm, 25*mm)
+Orientation.setFont("Helvetica-Bold", 12)
+Orientation.textLine("Lowerleft")
+paper.drawText(Orientation)
+
+paper.line(meridian,0, meridian,height)
+paper.line(0,equator, width,equator)
+
+paper.showPage()
+paper.save()
