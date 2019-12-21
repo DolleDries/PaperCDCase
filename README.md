@@ -20,5 +20,7 @@ I think there are smarter ways now...
 
 I use 'MakeLinks.sh' to make the necassary(?) links. 
 
+It runs on Linux.
+
 (See http://vandervlies.xs4all.nl/~andre/PaperCDCase/GenerateCDCase)
 
